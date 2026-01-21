@@ -53,7 +53,8 @@ def main(args):
             sliding_window=args.sliding_window,
             input_chars=args.input_chars,
             target_chars=args.target_chars,
-            neftune_alpha=args.neftune_alpha
+            neftune_alpha=args.neftune_alpha,
+            loss_lambda=1.0
         )
     else:
         lit_bind = LitBIND(
@@ -71,7 +72,8 @@ def main(args):
             sliding_window=args.sliding_window,
             input_chars=args.input_chars,
             target_chars=args.target_chars,
-            neftune_alpha=args.neftune_alpha
+            neftune_alpha=args.neftune_alpha,
+            loss_lambda=1.0
         )
 
     checkpoint_callback = ModelCheckpoint(
@@ -105,7 +107,7 @@ def setup_parser():
     parser.add_argument('--cuda_visible_devices', type=str, default="1", help='CUDA device(s) to make visible.')
 
     # Data and model arguments
-    parser.add_argument('--dataset_name', type=str, default='jwengr/C-LLM', help='Hugging Face dataset name.')
+    parser.add_argument('--dataset_name', type=str, default='jwengr/ToxibenchCN', help='Hugging Face dataset name.')
     parser.add_argument('--train_categories', type=str, default='[]', help='categories')
     parser.add_argument('--val_categories', type=str, default='[]', help='categories')
     parser.add_argument('--test_categories', type=str, default='[]', help='categories')
@@ -129,6 +131,7 @@ def setup_parser():
     parser.add_argument('--use_qlora', type=bool, default=False, help='Whether to use Lora in the model.')
     parser.add_argument('--lora_r', type=int, default=16, help='Mini-batch size for training.')
     parser.add_argument('--lora_alpha', type=int, default=32, help='Mini-batch size for training.')
+    parser.add_argument('--loss_lambda', type=float, default=1.0, help='Loss lambda for detection loss.')
 
 
     # Text processing arguments

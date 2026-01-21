@@ -20,11 +20,26 @@ from src.metrics.ChfF import chrf_corpus
 
 
 class BIND(nn.Module):
-    def __init__(self, base_model_name='Qwen/Qwen3-0.6B', use_sliding_window=True, sliding_window=12, use_bntd=True, neftune_alpha=0, n_tokens_per_char=4, use_qlora=False, lora_r=16, lora_alpha=32, lora_dropout=0.1):
+    def __init__(
+            self, 
+            base_model_name='Qwen/Qwen3-0.6B', 
+            use_sliding_window=True, 
+            sliding_window=12, 
+            use_bntd=True, 
+            neftune_alpha=0, 
+            n_tokens_per_char=4, 
+            use_qlora=False, 
+            lora_r=16, 
+            lora_alpha=32, 
+            lora_dropout=0.1,
+            loss_lambda=1.0
+        ):
         super().__init__()
         self.base_model_config = AutoConfig.from_pretrained(base_model_name)
         self.base_model_config._attn_implementation = 'eager'
         self.base_model_config.use_cache = False
+        self.loss_lambda = loss_lambda
+
         if use_bntd:
             self.base_model_config.use_sliding_window = use_sliding_window
             self.base_model_config.sliding_window = sliding_window
@@ -135,7 +150,7 @@ class BIND(nn.Module):
                 detect_labels.reshape(-1)
             )
         
-            loss = correct_loss + detect_loss * 1
+            loss = correct_loss + detect_loss * self.loss_lambda
 
         # -------- Prediction --------
         pred_ids, sentence_denoised = [], []
@@ -159,61 +174,6 @@ class BIND(nn.Module):
 
         return loss, logits, pred_ids, sentence_denoised
 
-    # def forward(self, sentence_noisy, sentence=None, pred=False):
-    #     output_ids = None
-    #     input_ids, attention_mask, token_type_ids = self.tokenizer.batch_encode_char(sentence_noisy, self.tokenizer.input_chars_dict)
-
-    #     if sentence is not None:
-    #         output_ids, output_attention_mask, output_token_type_ids = self.tokenizer.batch_encode_char(sentence, self.tokenizer.target_chars_dict)
-            
-    #         correct_ids = output_ids.clone().to('cuda')
-    #         # detect_labels = correct_ids.clone()
-    #         correct_ids[output_token_type_ids == 0] = -100
-
-    #         # # detect_labels = self.tokenizer.get_batch_detect_label(sentence, sentence_noisy).type_as(output_ids).to('cuda')
-    #         # detect_labels[input_ids==output_ids] = 0
-    #         # detect_labels[input_ids!=output_ids] = 1
-
-    #     input_ids = input_ids.to('cuda')
-    #     attention_mask = attention_mask.to('cuda')
-
-    #     outputs = self.model(
-    #         input_ids=input_ids,
-    #         attention_mask=attention_mask,
-    #         # output_hidden_states=True,
-    #     )
-
-    #     logits = outputs.logits
-    #     # hidden_states = outputs.hidden_states[-1][:,:-1,:]
-    #     # detect_logits = self.detect_head(hidden_states)
-
-    #     loss = None
-    #     if sentence is not None:
-    #         correct_loss = nn.CrossEntropyLoss(reduction='mean')(
-    #             logits[:, :-1, :].reshape(-1, self.model.config.vocab_size),
-    #             correct_ids[:, 1:].reshape(-1),
-    #         )
-
-    #         # detect_loss = FocalLoss('multiclass', ignore_index=-100)(
-    #         #     detect_logits.reshape(-1, 2),
-    #         #     detect_labels[:, 1:].reshape(-1)
-    #         # )
-        
-    #         loss = correct_loss # + detect_loss
-
-    #     # -------- Prediction --------
-    #     pred_ids, sentence_denoised = [], []
-    #     if pred:
-    #         for idx in range(input_ids.shape[0]):
-    #             input_ids_row = input_ids[idx].detach().cpu().tolist()[1:-1]
-    #             pred_ids_row = logits[idx][:-2].argmax(-1).detach().cpu().tolist()
-    #             token_type_ids_row = token_type_ids[idx].detach().cpu().tolist()[1:-1]
-
-    #             pred_ids.append(pred_ids_row)
-    #             sentence_denoised_row = self.tokenizer.decode_char(pred_ids_row, token_type_ids_row, input_ids_row, False)
-    #             sentence_denoised.append(sentence_denoised_row)
-
-    #     return loss, logits, pred_ids, sentence_denoised
 
 def gemma3_forward(
     self,
@@ -380,7 +340,8 @@ class LitBIND(L.LightningModule):
         n_tokens_per_char=4,
         input_chars='',
         target_chars='',
-        neftune_alpha=0
+        neftune_alpha=0,
+        loss_lambda=1.0
     ):
         super().__init__()
         self.base_model_name = base_model_name
@@ -392,6 +353,7 @@ class LitBIND(L.LightningModule):
         self.inference_sentence_min_length = inference_sentence_min_length
         self.inference_sentence_max_length = inference_sentence_max_length
         self.inference_sentence_n_overlap = inference_sentence_n_overlap
+        self.loss_lambda = loss_lambda
 
         self.bind = BIND(
             base_model_name=base_model_name,
@@ -402,7 +364,8 @@ class LitBIND(L.LightningModule):
             lora_r=lora_r,
             lora_alpha=lora_alpha,
             neftune_alpha=neftune_alpha,
-            n_tokens_per_char=n_tokens_per_char
+            n_tokens_per_char=n_tokens_per_char,
+            loss_lambda=loss_lambda
         )
         bind_tokenizer = BINDTokenizer(base_tokenizer_name=base_model_name, n_tokens_per_char=n_tokens_per_char, input_chars=input_chars, target_chars=target_chars)
         self.bind.set_tokenizer(bind_tokenizer)
