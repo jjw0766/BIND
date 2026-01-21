@@ -1,4 +1,4 @@
-# Project README
+# BIND: A Bidirectionally Aligned Next-token Denoising Framework for Fast and Lightweight Deobfuscation of Harmful Web Text
 
 ## Overview
 This project supports model training and inference using datasets such as **ToxiBenchCN**, **Bitabuse**, and **Bitviper**.  
