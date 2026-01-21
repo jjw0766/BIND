@@ -56,7 +56,7 @@ lightning_logs/
 checkpoints/
 checkpoint/
 
-data/
+src/data/*/*
 
 results/
 
