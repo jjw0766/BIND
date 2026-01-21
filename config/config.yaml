@@ -2,7 +2,7 @@ seed: 44
 cuda_visible_devices: "3"
 
 # Dataset & Model
-dataset_name: jwengr/PeOcrSanskritPreproc
+dataset_name: jwengr/ToxiBenchCN
 pretrained_model_path: ""
 base_model_name: Qwen/Qwen3-0.6B-Base
 n_tokens_per_char: 4
@@ -15,10 +15,12 @@ n_batch: 1
 epochs: 10
 learning_rate: 0.0001
 use_bntd: true
+sliding_window: 12
+neftune_alpha: 0
 use_qlora: false
 lora_r: 16
 lora_alpha: 32
-sliding_window: 12
+loss_lambda: 1.0
 
 # Sequence Lengths
 train_max_length: 128
