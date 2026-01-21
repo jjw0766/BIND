@@ -1,8 +1,7 @@
 # BIND: A Bidirectionally Aligned Next-token Denoising Framework for Fast and Lightweight Deobfuscation of Harmful Web Text
 
-## Overview
-This project supports model training and inference using datasets such as **ToxiBenchCN**, **Bitabuse**, and **Bitviper**.  
-The training and inference codes are located under the `src/` directory.
+## Announcement
+Our paper titled 'BIND: A Bidirectionally Aligned Next-token Denoising Framework for Fast and Lightweight Deobfuscation of Harmful Web Text' has been accepted to The ACM Web Conference (WWW) 2026.
 
 ---
 
