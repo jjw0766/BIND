@@ -11,7 +11,7 @@ from transformers import AutoModelWithLMHead
 from segmentation_models_pytorch.losses import FocalLoss
 
 from src.tokenizer.modeling_tokenizer import CharEncoderTokenizer, SentenceTokenizer
-from src.metrics.ChfF import chrf_corpus
+from src.metrics.ChrF import chrf_corpus
 
 
 class CharEncoder(nn.Module):
@@ -129,28 +129,10 @@ class LitCharEncoder(L.LightningModule):
         return score
     
     def predict_step(self, batch, batch_idx):
+        sentences_noisy = batch['sentence_noisy']
+        sentences_denoised = []
+        times = []
         if self.inference_sentence_n_overlap > 1:
-            sentences_noisy = batch['sentence_noisy']
-            sentences_denoised = []
-            times = []
-            for sentence_noisy in sentences_noisy:
-                start = time.time()
-                sentence_denoised_chunks = []
-                sentence_noisy_chunks = self.sentence_tokenizer.split_text(sentence_noisy)
-                for sentence_noisy_chunk in sentence_noisy_chunks:
-                    mini_batch = {
-                        'sentence_noisy': [sentence_noisy_chunk],
-                        'sentence': None
-                    }
-                    loss, logits, pred_ids, sentence_denoised_chunk = self(mini_batch, pred=True)
-                    sentence_denoised_chunks.append(sentence_denoised_chunk[0])
-                sentence_denoised = ''.join(sentence_denoised_chunks)
-                sentences_denoised.append(sentence_denoised)
-                end = time.time()
-                times.append(end-start)
-        else:
-            sentences_noisy = batch['sentence_noisy']
-            sentences_denoised = []
             for sentence_noisy in sentences_noisy:
                 start = time.time()
                 sentence_denoised_chunks_overlapped = []
@@ -167,6 +149,23 @@ class LitCharEncoder(L.LightningModule):
                 sentences_denoised.append(sentence_denoised)
                 end = time.time()
                 times.append(end-start)
+        else:
+            for sentence_noisy in sentences_noisy:
+                start = time.time()
+                sentence_denoised_chunks = []
+                sentence_noisy_chunks = self.sentence_tokenizer.split_text(sentence_noisy)
+                for sentence_noisy_chunk in sentence_noisy_chunks:
+                    mini_batch = {
+                        'sentence_noisy': [sentence_noisy_chunk],
+                        'sentence': None
+                    }
+                    loss, logits, pred_ids, sentence_denoised_chunk = self(mini_batch, pred=True)
+                    sentence_denoised_chunks.append(sentence_denoised_chunk[0])
+                sentence_denoised = ''.join(sentence_denoised_chunks)
+                sentences_denoised.append(sentence_denoised)
+                end = time.time()
+                times.append(end-start)
+
         return sentences_denoised, times
     
     def configure_optimizers(self):

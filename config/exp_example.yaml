@@ -3,6 +3,7 @@ cuda_visible_devices: "3"
 
 # Dataset & Model
 dataset_name: jwengr/ToxiBenchCN
+from_disk: false
 pretrained_model_path: ""
 base_model_name: Qwen/Qwen3-0.6B-Base
 n_tokens_per_char: 4
@@ -26,6 +27,6 @@ train_max_length: 128
 valid_max_length: 128
 inference_sentence_max_length: 64
 inference_sentence_min_length: 32
-inference_sentence_n_overlap: 3
+inference_sentence_n_overlap: 1
 
-prefix: "lambda=0.9"
+prefix: ""

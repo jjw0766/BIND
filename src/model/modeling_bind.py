@@ -16,7 +16,7 @@ from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 
 from src.tokenizer.modeling_tokenizer import BINDTokenizer, SentenceTokenizer
 from src.model.utils import apply_neftune
-from src.metrics.ChfF import chrf_corpus
+from src.metrics.ChrF import chrf_corpus
 
 
 class BIND(nn.Module):
@@ -396,7 +396,27 @@ class LitBIND(L.LightningModule):
         return score
     
     def predict_step(self, batch, batch_idx):
+        sentences_noisy = batch['sentence_noisy']
+        sentences_denoised = []
+        times = []
         if self.inference_sentence_n_overlap > 1:
+            for sentence_noisy in sentences_noisy:
+                start = time.time()
+                sentence_denoised_chunks_overlapped = []
+                sentence_noisy_chunks = self.sentence_tokenizer.split_text(sentence_noisy)
+                sentence_noisy_chunks_overlapped = self.sentence_tokenizer.overlap(sentence_noisy_chunks)
+                for start_idx, end_idx, sentence_noisy_chunk in sentence_noisy_chunks_overlapped:
+                    mini_batch = {
+                        'sentence_noisy': [sentence_noisy_chunk],
+                        'sentence': None
+                    }
+                    loss, logits, pred_ids, sentence_denoised_chunk = self(mini_batch, pred=True)
+                    sentence_denoised_chunks_overlapped.append((start_idx, end_idx, sentence_denoised_chunk[0]))
+                sentence_denoised = self.sentence_tokenizer.decode_overlap(sentence_denoised_chunks_overlapped)
+                sentences_denoised.append(sentence_denoised)
+                end = time.time()
+                times.append(end-start)
+        else:
             sentences_noisy = batch['sentence_noisy']
             sentences_denoised = []
             times = []
@@ -415,26 +435,8 @@ class LitBIND(L.LightningModule):
                 sentences_denoised.append(sentence_denoised)
                 end = time.time()
                 times.append(end-start)
-        else:
-            sentences_noisy = batch['sentence_noisy']
-            sentences_denoised = []
-            for sentence_noisy in sentences_noisy:
-                start = time.time()
-                sentence_denoised_chunks_overlapped = []
-                sentence_noisy_chunks = self.sentence_tokenizer.split_text(sentence_noisy)
-                sentence_noisy_chunks_overlapped = self.sentence_tokenizer.overlap(sentence_noisy_chunks)
-                for start_idx, end_idx, sentence_noisy_chunk in sentence_noisy_chunks_overlapped:
-                    mini_batch = {
-                        'sentence_noisy': [sentence_noisy_chunk],
-                        'sentence': None
-                    }
-                    loss, logits, pred_ids, sentence_denoised_chunk = self(mini_batch, pred=True)
-                    sentence_denoised_chunks_overlapped.append((start_idx, end_idx, sentence_denoised_chunk[0]))
-                sentence_denoised = self.sentence_tokenizer.decode_overlap(sentence_denoised_chunks_overlapped)
-                sentences_denoised.append(sentence_denoised)
-                end = time.time()
-                times.append(end-start)
         return sentences_denoised, times
+
     
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(

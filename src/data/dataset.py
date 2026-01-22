@@ -47,7 +47,7 @@ class TrainValCollateFn:
             'sentence': sentences
         }
 
-def get_train_dataloader(dataset_name, batch_size, max_length, categories=[], select=-1, from_disk=True):
+def get_train_dataloader(dataset_name, batch_size, max_length, categories=[], select=-1, from_disk=False):
     if from_disk:
         ds = datasets.load_from_disk(dataset_name)
     else:
@@ -59,7 +59,7 @@ def get_train_dataloader(dataset_name, batch_size, max_length, categories=[], se
         train_ds = train_ds.filter(lambda example: example['category'] in categories)
     return DataLoader(train_ds, batch_size=batch_size, collate_fn=TrainValCollateFn(max_length=max_length, mode='train'), shuffle=True)
 
-def get_dev_dataloader(dataset_name, batch_size, max_length, categories=[], select=-1, from_disk=True):
+def get_dev_dataloader(dataset_name, batch_size, max_length, categories=[], select=-1, from_disk=False):
     if from_disk:
         ds = datasets.load_from_disk(dataset_name)
     else:
@@ -71,7 +71,7 @@ def get_dev_dataloader(dataset_name, batch_size, max_length, categories=[], sele
         dev_ds = dev_ds.filter(lambda example: example['category'] in categories)
     return DataLoader(dev_ds, batch_size=batch_size)
 
-def get_test_dataloader(dataset_name, batch_size, categories=[], select=-1, from_disk=True):
+def get_test_dataloader(dataset_name, batch_size, categories=[], select=-1, from_disk=False):
     if from_disk:
         ds = datasets.load_from_disk(dataset_name)
     else:

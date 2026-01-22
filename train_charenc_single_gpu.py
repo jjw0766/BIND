@@ -49,7 +49,7 @@ def main(args):
 
     checkpoint_callback = ModelCheckpoint(
         dirpath='checkpoints/charencoder',
-        filename=f"{args.dataset_name.split('/')[-1]}-{args.base_model_name.split('/')[-1]}-seed={args.seed}" + "-{epoch:02d}-{valid_score:.4f}",
+        filename=f"{args.dataset_name.split('/')[-1]}-{args.base_model_name.split('/')[-1]}-seed={args.seed}-{args.prefix}" + "-{epoch:02d}-{valid_score:.4f}",
         monitor='valid_score',
         mode='max',
         save_weights_only=True,
@@ -79,6 +79,7 @@ def setup_parser():
 
     # Data and model arguments
     parser.add_argument('--dataset_name', type=str, default='jwengr/C-LLM', help='Hugging Face dataset name.')
+    parser.add_argument('--from_disk', type=bool, default=False, help='load dataset from disk')
     parser.add_argument('--base_model_name', type=str, default='Qwen/Qwen3-0.6B-Base', help='Hugging Face base model name.')
     parser.add_argument('--train_dataset_select', type=int, default=-1, help='Number of training samples to select. -1 for all.')
     parser.add_argument('--val_dataset_select', type=int, default=-1, help='Number of validation samples to select.')
@@ -99,6 +100,8 @@ def setup_parser():
     parser.add_argument('--inference_sentence_max_length', type=int, default=64, help='Max sentence length for inference.')
     parser.add_argument('--inference_sentence_min_length', type=int, default=32, help='Min sentence length for inference.')
     parser.add_argument('--inference_sentence_n_overlap', type=int, default=3, help='Number of sentences to overlap during inference.')
+
+    parser.add_argument('--prefix', type=str, default='')
 
     return parser
 

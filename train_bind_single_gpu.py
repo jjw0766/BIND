@@ -26,14 +26,16 @@ def main(args):
         batch_size=args.mini_batch_size,
         max_length=args.train_max_length,
         categories=ast.literal_eval(args.train_categories),
-        select=args.train_dataset_select
+        select=args.train_dataset_select,
+        from_disk=args.from_disk
     )
     dev_dl = get_dev_dataloader(
         args.dataset_name,
         batch_size=args.mini_batch_size,
         max_length=args.valid_max_length,
         categories=ast.literal_eval(args.val_categories),
-        select=args.val_dataset_select
+        select=args.val_dataset_select,
+        from_disk=args.from_disk
     )
     if args.pretrained_model_path:
         print('pretrained model loaded')
@@ -108,6 +110,7 @@ def setup_parser():
 
     # Data and model arguments
     parser.add_argument('--dataset_name', type=str, default='jwengr/ToxibenchCN', help='Hugging Face dataset name.')
+    parser.add_argument('--from_disk', type=bool, default=False, help='load dataset from disk')
     parser.add_argument('--train_categories', type=str, default='[]', help='categories')
     parser.add_argument('--val_categories', type=str, default='[]', help='categories')
     parser.add_argument('--test_categories', type=str, default='[]', help='categories')

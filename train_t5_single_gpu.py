@@ -74,6 +74,7 @@ def setup_parser():
 
     # Data and model arguments
     parser.add_argument('--dataset_name', type=str, default='jwengr/C-LLM', help='Hugging Face dataset name.')
+    parser.add_argument('--from_disk', type=bool, default=False, help='load dataset from disk')
     parser.add_argument('--base_model_name', type=str, default='Qwen/Qwen3-0.6B-Base', help='Hugging Face base model name.')
 
     # Training hyperparameters

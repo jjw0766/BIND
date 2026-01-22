@@ -32,6 +32,7 @@ def main(args):
         batch_size=config["mini_batch_size"],
         select=config.get('test_dataset_select', -1),
         categories=ast.literal_eval(config.get('test_categories', '[]')),
+        from_disk=config['from_disk']
     )
 
     # Load checkpoint

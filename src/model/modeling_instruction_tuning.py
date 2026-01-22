@@ -1,4 +1,5 @@
 import time
+from grapheme import graphemes
 import lightning as L
 import torch
 
@@ -6,7 +7,8 @@ from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 from transformers import AutoModelForCausalLM, BitsAndBytesConfig, AutoTokenizer
 
 from src.model.utils import apply_neftune
-from src.metrics.ChfF import chrf_corpus
+from src.metrics.ChrF import chrf_corpus
+from src.tokenizer.modeling_tokenizer import SentenceTokenizer
 
 class LitInstructionModel(L.LightningModule):
     def __init__(
@@ -18,7 +20,11 @@ class LitInstructionModel(L.LightningModule):
         lora_alpha=32,
         lora_dropout=0.1,
         epochs=10,
-        neftune_alpha=0
+        neftune_alpha=0,
+        user_inference_sentence_tokenizer=False,
+        inference_sentence_min_length=128,
+        inference_sentence_max_length=64,
+        inference_sentence_n_overlap=3,
     ):
         super().__init__()
         self.base_model_name = base_model_name
@@ -26,6 +32,8 @@ class LitInstructionModel(L.LightningModule):
         self.lr = lr
         self.epochs = epochs
         self.tokenizer = AutoTokenizer.from_pretrained(base_model_name)
+        self.use_inference_sentence_tokenizer = user_inference_sentence_tokenizer
+        self.inference_sentence_n_overlap = inference_sentence_n_overlap
 
         if use_qlora:
             quantization_config = BitsAndBytesConfig(
@@ -63,9 +71,19 @@ class LitInstructionModel(L.LightningModule):
                 model = apply_neftune(model, neftune_alpha)   
                 print('neftune applied') 
         self.model = model
+
+        if user_inference_sentence_tokenizer:
+            self.sentence_tokenizer = SentenceTokenizer(
+                min_length=inference_sentence_min_length,
+                max_length=inference_sentence_max_length,
+                n_overlap=inference_sentence_n_overlap,
+                roll=False
+            )
+        else:
+            self.sentence_tokenizer = None  
         
 
-    def get_prompt(self, sentence_noisy, sentence, mode='train'):
+    def get_prompt(self, sentence_noisy, sentence=None, mode='train'):
         if mode=='train':
             messages = [
                 {"role": "user", "content": f"Please decode the obfuscated text. Text: {sentence_noisy}"},
@@ -118,9 +136,7 @@ class LitInstructionModel(L.LightningModule):
         self.log('valid_score', score, batch_size=len(batch['sentence_noisy']))
         return score
     
-    def predict_step(self, batch, batch_idx):
-        times = []
-        start = time.time()
+    def predict_step_(self, batch, batch_idx):
         inputs = self.batch_tokenize(batch, mode='inference')
         outputs = self.model.generate(
             input_ids = inputs['input_ids'].to('cuda'),
@@ -128,9 +144,56 @@ class LitInstructionModel(L.LightningModule):
         )
         generated_ids = outputs[:, inputs['input_ids'].shape[1]:]
         decoded = self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
-        end = time.time()
-        times.append(end-start)
-        return decoded, times
+        return decoded
+    
+    def predict_step(self, batch, batch_idx):
+        if not self.use_inference_sentence_tokenizer:
+            times = []
+            start = time.time()
+            decoded = self.predict_step_(batch, batch_idx)
+            end = time.time()
+            times.append(end-start)
+            return decoded, times
+        else:
+            sentences_noisy = batch['sentence_noisy']
+            sentences_denoised = []
+            times = []
+            if self.inference_sentence_n_overlap > 1:
+                for sentence_noisy in sentences_noisy:
+                    start = time.time()
+                    sentence_denoised_chunks_overlapped = []
+                    sentence_noisy_chunks = self.sentence_tokenizer.split_text(sentence_noisy)
+                    sentence_noisy_chunks_overlapped = self.sentence_tokenizer.overlap(sentence_noisy_chunks)
+                    for start_idx, end_idx, sentence_noisy_chunk in sentence_noisy_chunks_overlapped:
+                        mini_batch = {
+                            'sentence_noisy': [sentence_noisy_chunk],
+                            'sentence': [None]
+                        }
+                        sentence_denoised_chunk_untruncked = self.predict_step_(mini_batch, 0)[0]
+                        sent_denoised_chunk_truncked = sentence_denoised_chunk_untruncked[:len(list(graphemes(sentence_noisy_chunk)))]
+                        sentence_denoised_chunks_overlapped.append((start_idx, end_idx, sent_denoised_chunk_truncked))
+                    sentence_denoised = self.sentence_tokenizer.decode_overlap(sentence_denoised_chunks_overlapped)
+                    sentences_denoised.append(sentence_denoised)
+                    end = time.time()
+                    times.append(end-start)
+            else:
+                for sentence_noisy in sentences_noisy:
+                    start = time.time()
+                    sentence_denoised_chunks = []
+                    sentence_noisy_chunks = self.sentence_tokenizer.split_text(sentence_noisy)
+                    for sentence_noisy_chunk in sentence_noisy_chunks:
+                        mini_batch = {
+                            'sentence_noisy': [sentence_noisy_chunk],
+                            'sentence': [None]
+                        }
+                        sentence_denoised_chunk_untruncked = self.predict_step_(mini_batch, 0)[0]
+                        sent_denoised_chunk_truncked = sentence_denoised_chunk_untruncked[:len(list(graphemes(sentence_noisy_chunk)))]
+                        sentence_denoised_chunks.append(sent_denoised_chunk_truncked)
+                    sentence_denoised = ''.join(sentence_denoised_chunks)
+                    sentences_denoised.append(sentence_denoised)
+                    end = time.time()
+                    times.append(end-start)
+            return sentences_denoised, times
         
     
     def configure_optimizers(self):

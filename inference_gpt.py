@@ -92,7 +92,8 @@ async def main(args):
     test_dl = get_test_dataloader(
         args.dataset_name,
         batch_size=args.batch_size,
-        select=args.test_dataset_select
+        select=args.test_dataset_select,
+        from_disk=args.from_disk
     )
 
     # 결과를 저장할 리스트
@@ -148,6 +149,7 @@ def setup_parser():
     parser = argparse.ArgumentParser(description="Inference with OpenAI/DeepSeek API (async)")
     parser.add_argument("--dataset_name", type=str, required=True,
                         help="사용할 데이터셋의 이름 (예: 'jfleg', 'conll2003')")
+    parser.add_argument("--from_disk", type=bool, default=False)
     parser.add_argument("--api_provider", type=str, default="openai", choices=["openai", "deepseek"],
                         help="사용할 API 프로바이더 ('openai' 또는 'deepseek')")
     parser.add_argument("--api_key", type=str, default=None,

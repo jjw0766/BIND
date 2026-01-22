@@ -6,7 +6,7 @@ from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training, Ta
 from transformers import T5ForConditionalGeneration, BitsAndBytesConfig, AutoTokenizer
 
 from src.model.utils import apply_neftune
-from src.metrics.ChfF import chrf_corpus
+from src.metrics.ChrF import chrf_corpus
 
 class LitT5(L.LightningModule):
     def __init__(

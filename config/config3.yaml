@@ -1,5 +1,5 @@
 seed: 42
-cuda_visible_devices: "0"
+cuda_visible_devices: "2"
 
 # Dataset & Model
 dataset_name: jwengr/DACON-Korean-Review-Obfuscation
@@ -17,11 +17,11 @@ lora_alpha: 32
 neftune_alpha: 0
 
 # Sequence Lengths
-train_max_length: 512
-valid_max_length: 512
+train_max_length: 128
+valid_max_length: 128
 use_inference_sentence_tokenizer: true
-inference_sentence_max_length: 512
-inference_sentence_min_length: 256
+inference_sentence_max_length: 128
+inference_sentence_min_length: 64
 inference_sentence_n_overlap: 1
 
-prefix: 'length=512'
+prefix: 'length=128'

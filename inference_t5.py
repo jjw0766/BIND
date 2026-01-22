@@ -28,7 +28,8 @@ def main(args):
     # Test dataloader
     test_dl = get_test_dataloader(
         config["dataset_name"],
-        batch_size=1
+        batch_size=1,
+        from_disk=config['from_disk']
     )
 
     # Load checkpoint

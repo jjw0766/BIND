@@ -26,14 +26,16 @@ def main(args):
         batch_size=args.mini_batch_size,
         max_length=args.train_max_length,
         select=args.train_dataset_select,
-        categories=ast.literal_eval(args.train_categories)
+        categories=ast.literal_eval(args.train_categories),
+        from_disk=args.from_disk
     )
     dev_dl = get_dev_dataloader(
         args.dataset_name,
         batch_size=args.mini_batch_size,
         max_length=args.valid_max_length,
         select=args.val_dataset_select,
-        categories=ast.literal_eval(args.val_categories)
+        categories=ast.literal_eval(args.val_categories),
+        from_disk=args.from_disk
     )
 
     lit_inst_model = LitInstructionModel(
@@ -78,6 +80,7 @@ def setup_parser():
 
     # Data and model arguments
     parser.add_argument('--dataset_name', type=str, default='jwengr/C-LLM', help='Hugging Face dataset name.')
+    parser.add_argument('--from_disk', type=bool, default=False, help='load dataset from disk')
     parser.add_argument('--train_categories', type=str, default='[]', help='categories for training data filtering, e.g., \'["category1", "category2"]\'.')
     parser.add_argument('--val_categories', type=str, default='[]', help='categories for validation data filtering, e.g., \'["category1", "category2"]\'.')
     parser.add_argument('--base_model_name', type=str, default='Qwen/Qwen3-0.6B-Base', help='Hugging Face base model name.')

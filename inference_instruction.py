@@ -33,6 +33,7 @@ def main(args):
         batch_size=1,
         select=config.get('test_dataset_select', -1),
         categories=ast.literal_eval(config.get('test_categories', '[]')),
+        from_disk=config['from_disk']
     )
 
     if not args.checkpoint:
@@ -42,7 +43,11 @@ def main(args):
             lr=float(config["learning_rate"]),
             epochs=config["epochs"],
             lora_r=config["lora_r"],
-            lora_alpha=config["lora_alpha"]
+            lora_alpha=config["lora_alpha"],
+            user_inference_sentence_tokenizer=config.get("use_inference_sentence_tokenizer", False),
+            inference_sentence_min_length=config.get("inference_sentence_min_length", 128),
+            inference_sentence_max_length=config.get("inference_sentence_max_length", 64),
+            inference_sentence_n_overlap=config.get("inference_sentence_n_overlap", 1),
         )
     else:
         lit_inst_model = LitInstructionModel.load_from_checkpoint(
@@ -53,6 +58,10 @@ def main(args):
             epochs=config["epochs"],
             lora_r=config["lora_r"],
             lora_alpha=config["lora_alpha"],
+            user_inference_sentence_tokenizer=config.get("use_inference_sentence_tokenizer", False),
+            inference_sentence_min_length=config.get("inference_sentence_min_length", 128),
+            inference_sentence_max_length=config.get("inference_sentence_max_length", 64),
+            inference_sentence_n_overlap=config.get("inference_sentence_n_overlap", 1),
             strict=False
         )
 
@@ -99,6 +108,7 @@ def setup_parser():
     parser = argparse.ArgumentParser(description="Inference for LitBIND model")
     parser.add_argument("--config", type=str, default="train_config.yaml",
                         help="Path to YAML config file (same as training)")
+    
     parser.add_argument("--checkpoint", type=str, default="", required=False,
                         help="Path to trained checkpoint (.ckpt)")
     parser.add_argument("--cuda_visible_devices", type=str, default="0",

@@ -10,7 +10,8 @@ Our paper titled 'BIND: A Bidirectionally Aligned Next-token Denoising Framework
 ### Datasets
 - **ToxiBenchCN**: [https://github.com/thomasyyyoung/ToxiBenchCN](https://github.com/thomasyyyoung/ToxiBenchCN)  
 - **Bitabuse / Bitviper**: [https://github.com/CAU-AutoML/Bitabuse](https://github.com/CAU-AutoML/Bitabuse)  
-- Original data should be downloaded from the above repositories.
+- **Obfuscated Korean Review Restoration and Generative AI Competition** [https://dacon.io/en/competitions/official/236446/data](https://dacon.io/en/competitions/official/236446/data)
+- Original data should be downloaded from the above repositories/website.
 
 ### Preprocessing / Modifications
 - Code for preprocessing and data modifications can be found in `src/data`.
@@ -20,15 +21,16 @@ Our paper titled 'BIND: A Bidirectionally Aligned Next-token Denoising Framework
 ## Training
 
 ### Configuration
-Before training, create an experiment configuration file `config/your_exp.yaml`.  
+Before training, create an experiment configuration file `config/exp.yaml`.  
 Example:
 
 ```yaml
-seed: 44
+seed: 42
 cuda_visible_devices: "3"
 
 # Dataset & Model
 dataset_name: jwengr/ToxiBenchCN
+from_disk: true
 pretrained_model_path: ""
 base_model_name: Qwen/Qwen3-0.6B-Base
 n_tokens_per_char: 4
@@ -52,23 +54,22 @@ train_max_length: 128
 valid_max_length: 128
 inference_sentence_max_length: 64
 inference_sentence_min_length: 32
-inference_sentence_n_overlap: 3
+inference_sentence_n_overlap: 1
 
 prefix: ""
 ```
 
 
 ## Training Command
+```bash
 python train_bind_single_gpu.py config/your_exp.yaml
+```
 
-Inference Command
-python inference_bind.py --config=config/your_exp.yaml --checkpoint=checkpoints/your_checkpoint.ckpt
+## Inference Command
+```bash
+python inference_bind.py --config=config/your_exp.yaml --checkpoint=checkpoints/your_checkpoint.ckpt --cuda_visiable_device=0
+```
 
-Directory Structure Example
-├── config/                # Experiment YAML files
-├── checkpoints/           # Trained model checkpoints
-├── src/
-│   ├── data/              # Data preprocessing code
-│   ├── train_bind_single_gpu.py
-│   └── inference_bind.py
-└── README.md
+## Evaluate
+see evaluate.ipynb
+

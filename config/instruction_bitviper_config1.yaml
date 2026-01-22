@@ -21,5 +21,9 @@ neftune_alpha: 0
 # Sequence Lengths
 train_max_length: 128
 valid_max_length: 128
+use_inference_sentence_tokenizer: false
+inference_sentence_max_length: 32
+inference_sentence_min_length: 16
+inference_sentence_n_overlap: 1
 
 prefix: ''
